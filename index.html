@@ -1,0 +1,127 @@
+<html>
+        <head>
+<!-- Plotly.js -->
+            <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+            <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+            <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">  
+            <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"/>
+        </head>
+        <body>
+            
+        <!-- Plotly chart will be drawn inside this DIV -->
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="datetimepicker1">Status Date</label>
+                        <div class="input-group date" id="datetimepicker1">
+                            <input type="text" class="form-control" />	<span class="input-group-addon"><span class="glyphicon-calendar glyphicon"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div id="myDiv" style="width:90%; height:90%"></div>
+                </div>
+            </div>
+        </div>
+        <script>
+            $(function () {
+                $('#datetimepicker1').datepicker({format: 'yyyy-mm-dd',});
+                $('#datetimepicker1').on('changeDate', function() {
+                    
+                    $.get("../api/statuses/?Datetime=" + $('#datetimepicker1').datepicker('getFormattedDate') + "T00:00:00.000Z", function(data) {
+                
+                        // we need to group units with the same lat/lng combos so they can be represented as a single point
+                        var data_points = {};
+                        data.Units.forEach(function(x) {
+                            var latlng_key = String(x.Latitude) + "-" + String(x.Longitude);
+                            if(latlng_key in data_points){
+                                data_points[latlng_key].text += ("<br>" + x.Name + " " + String(x["Power %"]) + "%");
+                                data_points[latlng_key].powers[x.Name] = x["Power %"];
+                                data_points[latlng_key].mwt += (x["Mwt"] * x["Power %"]);
+                            } else {
+                                data_points[latlng_key] = x;
+                                data_points[latlng_key].text = x.Name + " " + String(x["Power %"] + "%");
+                                data_points[latlng_key].powers = {};
+                                data_points[latlng_key].powers[x.Name] = x["Power %"];
+                                data_points[latlng_key].mwt = (x["Mwt"] * x["Power %"]);
+                            }
+                        });
+
+                        // we made the keys/properties of data_points the lat/lng combo pair for lookup purposes, but we don't need it now, we only need the rolled up objects
+                        // that are in the values
+                        data_points = Object.values(data_points);                
+
+                        // run a map across the array of data points to get the needed properties in their own arrays
+                        var lats = data_points.map(function(x) { return x.Latitude });
+                        var mwt = data_points.map(function(x) { return x.mwt });
+                        
+                        var max_mwt = Math.max(...mwt);
+                        mwt = mwt.map(function(x) { return 40*x/max_mwt;});
+                        
+                        var longs = data_points.map(function(x) { return x.Longitude });
+                        var text = data_points.map(function(x) { return x.text });
+//                        var power = data_points.map(function(x) { return Object.values(x.powers).reduce(function(a,b) {return a+b;}) / Object.values(x.powers).length });
+                        var power = data_points.map(function(x) { return Math.min(...Object.values(x.powers)) });
+
+                        // create the data array for plotly, we only have one trace in it
+                        var data = [{
+                           type: 'scattergeo',
+                           locationmode: 'USA-states',
+                           lat: lats,
+                           lon: longs,
+                           text: text,
+                           hoverinfo: 'text',
+                           marker: {
+                             size: mwt,
+                             line: {
+                               color: 'black',
+                               width: 2
+                             },
+                             "autocolorscale": false,
+                            "colorscale": [
+                                [0, "rgb(5, 10, 172)"],
+                                [35, "rgb(40, 60, 190)"],
+                                [50, "rgb(70, 100, 245)"],
+                                [60, "rgb(90, 120, 245)"],
+                                [70, "rgb(106, 137, 247)"],
+                                [100, "rgb(220, 220, 220)"]
+                            ],
+                            "colorbar": {
+                                "title": "% Rated Thermal Power"
+                            },
+                            "color": power,
+                            "cmin": 0,
+                            "reversescale": true,
+                            "opacity": 0.8
+                           }
+                        }];
+
+                        var layout = {
+                            title: $('#datetimepicker1').datepicker('getFormattedDate') + ' Nuclear Reactor Status',
+                            showlegend: false,
+                            geo: {
+                              scope: 'usa',
+                              projection: {
+                                type: 'albers usa'
+                              },
+                              showland: true,
+                              landcolor: 'rgb(217, 217, 217)',
+                              subunitwidth: 1,
+                              countrywidth: 1,
+                              subunitcolor: 'rgb(255,255,255)',
+                              countrycolor: 'rgb(255,255,255)'
+                            },
+                        };
+
+                        // create a new plot with the new dates
+                        Plotly.newPlot(myDiv, data, layout, {showLink: false});
+                      });
+                });                
+            });
+        </script>
+        </body>
+</html>

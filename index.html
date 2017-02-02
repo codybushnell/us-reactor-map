@@ -33,7 +33,7 @@
                 $('#datetimepicker1').datepicker({format: 'yyyy-mm-dd',});
                 $('#datetimepicker1').on('changeDate', function() {
                     
-                    $.get("http://reactor-status.azurewebsites.net/api/statuses/?Datetime=" + $('#datetimepicker1').datepicker('getFormattedDate') + "T00:00:00.000Z", function(data) {
+                    $.get("https://reactor-status.azurewebsites.net/api/statuses/?Datetime=" + $('#datetimepicker1').datepicker('getFormattedDate') + "T00:00:00.000Z", function(data) {
                 
                         // we need to group units with the same lat/lng combos so they can be represented as a single point
                         var data_points = {};

@@ -1,0 +1,39 @@
+<html>
+        <head>
+<!-- Plotly.js -->
+            <script type="text/javascript" src="js/plotly-latest.min.js"></script>
+            <script type="text/javascript" src="js/jquery-2.2.4.min.js"></script>
+            <link href="css/bootstrap.min.css" rel="stylesheet">  
+            <script type="text/javascript" src="js/bootstrap-datepicker.min.js"></script>
+            <link rel="stylesheet" href="css/bootstrap-datepicker3.css"/>
+        </head>
+        <body>
+            
+        <!-- Plotly chart will be drawn inside this DIV -->
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="datetimepicker1">Status Date</label>
+                        <div class="input-group date" id="datetimepicker1">
+                            <input type="text" class="form-control" />	<span class="input-group-addon"><span class="glyphicon-calendar glyphicon"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div id="myDiv" style="width:90%; height:90%"></div>
+                </div>
+            </div>
+        </div>
+        <script>
+            $(function () {
+                    
+				$.get("http://reactor-status.azurewebsites.net/api/reactors", function(data) {
+					alert(data);					
+				});               
+            });
+        </script>
+        </body>
+</html>
